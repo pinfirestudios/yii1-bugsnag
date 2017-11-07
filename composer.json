@@ -1,0 +1,25 @@
+{
+    "name": "pinfirestudios/yii1-bugsnag",
+    "description": "Yii1 log target and ErrorHandler for Bugsnag",
+    "keywords": ["logging", "errors"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Justin Cherniak",
+            "email": "justin@pinfirestudios.com",
+            "homepage": "http://www.pinfirestudios.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "pinfirestudios\\yii2bugsnag\\": "src/"
+        }
+    },
+    "require": {
+        "bugsnag/bugsnag": "2.*",
+        "yiisoft/yii": "^1.1"
+    },
+	"suggest": {
+		"bower-asset/bugsnag": "Needed to enable Bugsnag JS logging.  See README.md for installation instructions."
+	}
+}
