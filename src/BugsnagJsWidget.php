@@ -29,7 +29,7 @@ class BugsnagJsWidget extends \CWidget
      */
     public function init()
     {
-        if (!Yii::app()->has('bugsnag'))
+        if (!Yii::app()->hasComponent('bugsnag'))
         {
             throw new InvalidConfigException('BugsnagAsset requires Bugsnag component to be enabled');
         }
@@ -56,7 +56,7 @@ class BugsnagJsWidget extends \CWidget
             $this->sourcePath = '@bower/bugsnag/src';
 			$filePath = 'bugsnag.js';
 
-			if (!file_exists(Yii::getPathOfAlias($this>sourcePath . '/' . $filePath)))
+			if (!file_exists(Yii::getPathOfAlias($this->sourcePath . '/' . $filePath)))
 			{
 				throw new InvalidConfigException('Cannot find Bugsnag.js source code.  Is bower-asset/bugsnag installed?');
 			}

@@ -59,7 +59,7 @@ class BugsnagComponent extends \CComponent
     public function getUserData()
     {
         // Don't crash if not using CWebUser
-        if (!Yii::app()->has('user') || !isset(Yii::app()->user->id))
+        if (!Yii::app()->hasComponent('user') || !isset(Yii::app()->user->id))
         {
             return null;
         }

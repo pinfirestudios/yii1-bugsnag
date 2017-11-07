@@ -11,7 +11,7 @@ class BugsnagLogTarget extends \CLogRoute
 	/**
 	 * @inheritdoc
 	 */
-    protected function processLogs(array $logs)
+    protected function processLogs($logs)
     {
         self::$exportedMessages = array_merge(self::$exportedMessages, $logs);
 
@@ -54,7 +54,7 @@ class BugsnagLogTarget extends \CLogRoute
     public static function getMessages()
     {
         return array_map(
-            function($message) use ($levelMap)
+            function($message)
             {
                 list($message, $level, $category, $timestamp) = $message;
 
