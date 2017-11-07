@@ -12,7 +12,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "pinfirestudios\\yii2bugsnag\\": "src/"
+            "pinfirestudios\\yii1bugsnag\\": "src/"
         }
     },
     "require": {
