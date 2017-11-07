@@ -47,6 +47,8 @@ class BugsnagComponent extends \CComponent
             $this->releaseStage = defined('YII_ENV') ? YII_ENV : 'production';
         }
 
+        $this->client->setAppVersion($this->getAppVersion());
+
         Yii::trace("Setting release stage to {$this->releaseStage}.", __CLASS__);
         $this->client->setReleaseStage($this->releaseStage);
     }
@@ -68,16 +70,16 @@ class BugsnagComponent extends \CComponent
             'id' => Yii::app()->user->id,
         ];
     }
-	
-	/**
-	 * Override this to provider version information to the JS function.
-	 *
-	 * @return string
-	 */
-	public function getAppVersion()
-	{
-		return '';
-	}
+
+    /**
+     * Override this to provider version information to the JS function.
+     *
+     * @return string
+     */
+    public function getAppVersion()
+    {
+        return '';
+    }
 
     public function getClient()
     {
