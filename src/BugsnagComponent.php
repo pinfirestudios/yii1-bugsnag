@@ -68,6 +68,16 @@ class BugsnagComponent extends \CComponent
             'id' => Yii::app()->user->id,
         ];
     }
+	
+	/**
+	 * Override this to provider version information to the JS function.
+	 *
+	 * @return string
+	 */
+	public function getAppVersion()
+	{
+		return '';
+	}
 
     public function getClient()
     {

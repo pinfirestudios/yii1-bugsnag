@@ -4,6 +4,8 @@ namespace pinfirestudios\yii1bugsnag;
 
 use Yii;
 use CClientScript;
+use CHttpException;
+use CJavaScript;
 
 /**
  * If you would like to use Bugsnag's javascript on your site, add this widget to your base layout.
@@ -31,46 +33,46 @@ class BugsnagJsWidget extends \CWidget
     {
         if (!Yii::app()->hasComponent('bugsnag'))
         {
-            throw new InvalidConfigException('BugsnagAsset requires Bugsnag component to be enabled');
+            throw new CHttpException(500, 'BugsnagAsset requires Bugsnag component to be enabled');
         }
 
         if (!in_array($this->version, [2, 3]))
         {
-            throw new InvalidConfigException('Bugsnag javascript only supports version 2 or 3');
+            throw new CHttpException(500, 'Bugsnag javascript only supports version 2 or 3');
         }
 
         $this->registerJavascript();
 
         parent::init();
-    }
-
+	}
 
     /**
      * Registers Bugsnag JavaScript to page
      */
     private function registerJavascript()
     {
-        $filePath = '//d2wy8f7a9ursnm.cloudfront.net/bugsnag-' . $this->version . '.js';
+        $bugsnagUrl = '//d2wy8f7a9ursnm.cloudfront.net/bugsnag-' . $this->version . '.js';
         if (!$this->useCdn)
-        {
-            $this->sourcePath = '@bower/bugsnag/src';
+		{
+			// Yii-1 won't have a vendor or bower-asset path guaranteed, so try and figure it out
+			// with a relative path.
+			$sourcePath = __DIR__ . '/../../../bower-asset/bugsnag/src';
+
+			$sourcePath = Yii::app()->assetManager->publish($sourcePath);
 			$filePath = 'bugsnag.js';
 
-			if (!file_exists(Yii::getPathOfAlias($this->sourcePath . '/' . $filePath)))
-			{
-				throw new InvalidConfigException('Cannot find Bugsnag.js source code.  Is bower-asset/bugsnag installed?');
-			}
+			$bugsnagUrl = $sourcePath . '/' . $filePath;
         }
 
 		$cs = Yii::app()->clientScript;
 	   
 		$cs->registerScriptFile(
-			$filePath,
+			$bugsnagUrl,
 			CClientScript::POS_HEAD,
 			[
 				'data-apikey' => Yii::app()->bugsnag->bugsnag_api_key,
 				'data-releasestage' => Yii::app()->bugsnag->releaseStage,
-				'data-appversion' => Yii::app()->version,
+				'data-appversion' => Yii::app()->bugsnag->appVersion,
         	]
 		);
 
