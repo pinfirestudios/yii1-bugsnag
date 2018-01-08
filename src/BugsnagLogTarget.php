@@ -29,11 +29,11 @@ class BugsnagLogTarget extends \CLogRoute
 
                 if ($level == CLogger::LEVEL_ERROR)
                 {
-                    Yii::app()->bugsnag->notifyError($category, $message . " ($timestamp)", $trace);
+                    Yii::app()->bugsnag->notifyError($category, $message . " ($timestamp)");
                 }
                 elseif ($level == CLogger::LEVEL_WARNING)
                 {
-                    Yii::app()->bugsnag->notifyWarning($category, $message . " ($timestamp)", $trace);
+                    Yii::app()->bugsnag->notifyWarning($category, $message . " ($timestamp)");
                 }
             }
 
