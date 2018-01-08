@@ -99,15 +99,39 @@ class BugsnagComponent extends \CComponent
             Yii::getLogger()->flush(true);
         }
 
-        if (isset($error->metaData['trace']))
+        if (isset($error->stacktrace))
         {
-            $trace = $error->metaData['trace'];
-            unset($error->metaData['trace']);
+            $trace = $error->stacktrace;
 
-            if (!empty($trace))
+            if (!empty($trace->frames))
             {
-                $firstFrame = array_shift($trace);
-                $error->setStacktrace(\Bugsnag_Stacktrace::fromBacktrace($error->config, $trace, $firstFrame['file'], $firstFrame['line']));
+                $rekey = false;
+                for ($i = 0; $i < count($trace->frames); $i++)
+                {
+                    $frame = $trace->frames[$i];
+                    $classDelimiter = strpos($frame['method'], '::');
+                    if ($classDelimiter === false)
+                    {
+                        break;
+                    }
+
+                    $class = substr($frame['method'], 0, $classDelimiter);
+                    if (
+                        $frame['method'] != 'CApplication::handleError' &&
+                        !is_a($class, 'CErrorHandler', true)
+                    )
+                    {
+                        break;
+                    }
+
+                    unset($trace->frames[$i]);
+                    $rekey = true;
+                }
+
+                if ($rekey)
+                {
+                    $trace->frames = array_values($trace->frames);
+                }
             }
         }
 
