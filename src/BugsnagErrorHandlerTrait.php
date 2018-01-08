@@ -14,7 +14,7 @@ trait BugsnagErrorHandlerTrait
      *
      * @var boolean
      */
-	protected $inExceptionHandler = false;
+    protected $inExceptionHandler = false;
 
     /**
      * Only log the exception here if we haven't handled it below (in handleException)

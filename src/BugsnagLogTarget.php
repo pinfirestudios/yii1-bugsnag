@@ -8,9 +8,9 @@ class BugsnagLogTarget extends \CLogRoute
 {
     protected static $exportedMessages = [];
 
-	/**
-	 * @inheritdoc
-	 */
+    /**
+     * @inheritdoc
+     */
     protected function processLogs($logs)
     {
         self::$exportedMessages = array_merge(self::$exportedMessages, $logs);
@@ -46,11 +46,11 @@ class BugsnagLogTarget extends \CLogRoute
         }
     }
 
-	/**
-	 * Returns all collected messages, formatted as single strings.
-	 *
-	 * @return string[]
-	 */
+    /**
+     * Returns all collected messages, formatted as single strings.
+     *
+     * @return string[]
+     */
     public static function getMessages()
     {
         return array_map(
@@ -65,7 +65,7 @@ class BugsnagLogTarget extends \CLogRoute
                 $date = date('Y-m-d H:i:s', $timestamp) . '.' . substr(fmod($timestamp, 1), 2, 4);
                 return "{$level} - ({$category}) @ {$date} - {$message}";
             }, 
-			self::$exportedMessages
+            self::$exportedMessages
         );
     }
 }

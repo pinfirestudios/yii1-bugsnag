@@ -44,7 +44,7 @@ class BugsnagJsWidget extends \CWidget
         $this->registerJavascript();
 
         parent::init();
-	}
+    }
 
     /**
      * Registers Bugsnag JavaScript to page
@@ -53,28 +53,28 @@ class BugsnagJsWidget extends \CWidget
     {
         $bugsnagUrl = '//d2wy8f7a9ursnm.cloudfront.net/bugsnag-' . $this->version . '.js';
         if (!$this->useCdn)
-		{
-			// Yii-1 won't have a vendor or bower-asset path guaranteed, so try and figure it out
-			// with a relative path.
-			$sourcePath = __DIR__ . '/../../../bower-asset/bugsnag/src';
+        {
+            // Yii-1 won't have a vendor or bower-asset path guaranteed, so try and figure it out
+            // with a relative path.
+            $sourcePath = __DIR__ . '/../../../bower-asset/bugsnag/src';
 
-			$sourcePath = Yii::app()->assetManager->publish($sourcePath);
-			$filePath = 'bugsnag.js';
+            $sourcePath = Yii::app()->assetManager->publish($sourcePath);
+            $filePath = 'bugsnag.js';
 
-			$bugsnagUrl = $sourcePath . '/' . $filePath;
+            $bugsnagUrl = $sourcePath . '/' . $filePath;
         }
 
-		$cs = Yii::app()->clientScript;
-	   
-		$cs->registerScriptFile(
-			$bugsnagUrl,
-			CClientScript::POS_HEAD,
-			[
-				'data-apikey' => Yii::app()->bugsnag->bugsnag_api_key,
-				'data-releasestage' => Yii::app()->bugsnag->releaseStage,
-				'data-appversion' => Yii::app()->bugsnag->appVersion,
-        	]
-		);
+        $cs = Yii::app()->clientScript;
+       
+        $cs->registerScriptFile(
+            $bugsnagUrl,
+            CClientScript::POS_HEAD,
+            [
+                'data-apikey' => Yii::app()->bugsnag->bugsnag_api_key,
+                'data-releasestage' => Yii::app()->bugsnag->releaseStage,
+                'data-appversion' => Yii::app()->bugsnag->appVersion,
+            ]
+        );
 
         // Include this wrapper since bugsnag.js might be blocked by adblockers.  We don't want to completely die if so.
         $js = 'var Bugsnag = Bugsnag || {};';
@@ -89,8 +89,8 @@ class BugsnagJsWidget extends \CWidget
         {
             $releaseStages = CJavaScript::encode(Yii::app()->bugsnag->notifyReleaseStages);
             $js .= "Bugsnag.notifyReleaseStages = $releaseStages;";
-		}
+        }
 
-		$cs->registerScript(__CLASS__, $js, CClientScript::POS_HEAD);
+        $cs->registerScript(__CLASS__, $js, CClientScript::POS_HEAD);
     }
 }
