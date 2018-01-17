@@ -23,6 +23,15 @@ class BugsnagComponent extends \CComponent
      */
     public $exportingLog = false;
 
+    /**
+     * If we are already processing an exception, this signals the exception
+     * error log category
+     *
+     * @see CApplication::handleException
+     * @var string
+     */
+    public $currentExceptionLogCategory = null;
+
     public function init()
     {
         if (empty($this->bugsnag_api_key))
@@ -142,6 +151,11 @@ class BugsnagComponent extends \CComponent
 
     public function notifyError($category, $message, $trace = null)
     {
+        if ($category == $this->currentExceptionLogCategory)
+        {
+            return;
+        }
+
         $this->getClient()->notifyError($category, $message, ['trace' => $trace], 'error');
     }
 
@@ -168,7 +182,22 @@ class BugsnagComponent extends \CComponent
             $this->getClient()->setContext($exception->getContext());
         }
 
-        $this->getClient()->notifyException($exception, $metadata, $severity);
+        // Avoid sending exceptions as log messages and real exceptions
+        // @see CApplication::handleException
+        try
+        {
+            $this->currentExceptionLogCategory = 'exception.'.get_class($exception);
+            if ($exception instanceof CHttpException)
+            {
+                $this->currentExceptionLogCategory .= '.' . $exception->statusCode;
+            }
+
+            $this->getClient()->notifyException($exception, $metadata, $severity);
+        }
+        finally
+        {
+            $this->currentExceptionLogCategory = null;
+        }
     }
 
     public function runShutdownHandler()
