@@ -6,6 +6,12 @@ use CLogger;
 
 class BugsnagLogTarget extends \CLogRoute
 {
+    /**
+     * @var string[] Error message categories for which we should NOT notify Bugsnag,
+     *     even if they are errors or warnings.
+     */
+    public $noNotifyCategories = [];
+
     protected static $exportedMessages = [];
 
     /**
@@ -21,19 +27,22 @@ class BugsnagLogTarget extends \CLogRoute
             foreach ($logs as $message)
             {
                 list($message, $level, $category, $timestamp) = $message; 
-                
+
                 if ($category == BugsnagComponent::IGNORED_LOG_CATEGORY) 
                 {
                     continue;
                 }
 
-                if ($level == CLogger::LEVEL_ERROR)
+                if (!in_array($category, $this->noNotifyCategories))
                 {
-                    Yii::app()->bugsnag->notifyError($category, $message . " ($timestamp)");
-                }
-                elseif ($level == CLogger::LEVEL_WARNING)
-                {
-                    Yii::app()->bugsnag->notifyWarning($category, $message . " ($timestamp)");
+                    if ($level == CLogger::LEVEL_ERROR)
+                    {
+                        Yii::app()->bugsnag->notifyError($category, $message . " ($timestamp)");
+                    }
+                    elseif ($level == CLogger::LEVEL_WARNING)
+                    {
+                        Yii::app()->bugsnag->notifyWarning($category, $message . " ($timestamp)");
+                    }
                 }
             }
 
