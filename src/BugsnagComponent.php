@@ -169,7 +169,7 @@ class BugsnagComponent extends \CComponent
         $this->getClient()->notifyError($category, $message, ['trace' => $trace], 'info');
     }
 
-    public function notifyException($exception, $severity = null)
+    public function notifyException($exception, $severity = 'error')
     {
         $metadata = null;
         if ($exception instanceof BugsnagCustomMetadataInterface)
