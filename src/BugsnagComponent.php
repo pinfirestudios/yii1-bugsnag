@@ -32,6 +32,12 @@ class BugsnagComponent extends \CComponent
      */
     public $currentExceptionLogCategory = null;
 
+    /**
+     * Sets @application as the project root and "strip path".
+     * @var boolean
+     */
+    public $useAppAliasForProjectRoot = true;
+
     public function init()
     {
         if (empty($this->bugsnag_api_key))
@@ -59,7 +65,16 @@ class BugsnagComponent extends \CComponent
         $this->client->setAppVersion($this->getAppVersion());
 
         Yii::trace("Setting release stage to {$this->releaseStage}.", __CLASS__);
-        $this->client->setReleaseStage($this->releaseStage);
+		$this->client->setReleaseStage($this->releaseStage);
+
+		if ($this->useAppAliasForProjectRoot)
+		{
+			$basePath = Yii::app()->getBasePath();
+			$this->client->setProjectRoot($basePath);
+			$this->client->setStripPath($basePath);
+		}
+
+		$this->client->setType(get_class(Yii::app()));
     }
 
     /**
