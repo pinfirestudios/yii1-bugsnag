@@ -26,6 +26,8 @@ class BugsnagJsWidget extends \CWidget
      */
     public $useCdn = false;
 
+    public $sourceAlias = 'npm.bugsnag-js.dist';
+
     /**
      * Initiates Bugsnag javascript registration
      */
@@ -56,10 +58,9 @@ class BugsnagJsWidget extends \CWidget
         {
             // Yii-1 won't have a vendor or bower-asset path guaranteed, so try and figure it out
             // with a relative path.
-            $sourcePath = __DIR__ . '/../../../bower-asset/bugsnag/src';
-
+            $sourcePath = Yii::getPathOfAlias($this->sourceAlias);
             $sourcePath = Yii::app()->assetManager->publish($sourcePath);
-            $filePath = 'bugsnag.js';
+            $filePath = 'bugsnag.min.js';
 
             $bugsnagUrl = $sourcePath . '/' . $filePath;
         }
