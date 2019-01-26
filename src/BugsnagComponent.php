@@ -32,6 +32,23 @@ class BugsnagComponent extends \CComponent
      */
     public $currentExceptionLogCategory = null;
 
+    /**
+     * Sets @application as the project root and "strip path".
+     * @var boolean
+     */
+    public $useAppAliasForProjectRoot = true;
+
+    /**
+     * Can be overridden to prevent the JS code being injected on pages
+     * For example, we don't care if bots have JS errors...
+     *
+     * @return boolean true if we should include JS, false if not.
+     */
+    public function getShouldIncludeJs()
+    {
+        return true;
+    }
+
     public function init()
     {
         if (empty($this->bugsnag_api_key))
@@ -60,6 +77,15 @@ class BugsnagComponent extends \CComponent
 
         Yii::trace("Setting release stage to {$this->releaseStage}.", __CLASS__);
         $this->client->setReleaseStage($this->releaseStage);
+
+        if ($this->useAppAliasForProjectRoot)
+        {
+            $basePath = Yii::app()->getBasePath();
+            $this->client->setProjectRoot($basePath);
+            $this->client->setStripPath($basePath);
+        }
+
+        $this->client->setType(get_class(Yii::app()));
     }
 
     /**
@@ -169,7 +195,7 @@ class BugsnagComponent extends \CComponent
         $this->getClient()->notifyError($category, $message, ['trace' => $trace], 'info');
     }
 
-    public function notifyException($exception, $severity = null)
+    public function notifyException($exception, $severity = 'error')
     {
         $metadata = null;
         if ($exception instanceof BugsnagCustomMetadataInterface)
