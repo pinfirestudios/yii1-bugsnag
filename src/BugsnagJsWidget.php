@@ -26,6 +26,8 @@ class BugsnagJsWidget extends \CWidget
      */
     public $useCdn = false;
 
+    public $sourceAlias = 'npm.bugsnag-js.dist';
+
     /**
      * Initiates Bugsnag javascript registration
      */
@@ -41,7 +43,10 @@ class BugsnagJsWidget extends \CWidget
             throw new CHttpException(500, 'Bugsnag javascript only supports version 2 or 3');
         }
 
-        $this->registerJavascript();
+        if (Yii::app()->bugsnag->shouldIncludeJs)
+        {
+            $this->registerJavascript();
+        }
 
         parent::init();
     }
@@ -56,16 +61,15 @@ class BugsnagJsWidget extends \CWidget
         {
             // Yii-1 won't have a vendor or bower-asset path guaranteed, so try and figure it out
             // with a relative path.
-            $sourcePath = __DIR__ . '/../../../bower-asset/bugsnag/src';
-
+            $sourcePath = Yii::getPathOfAlias($this->sourceAlias);
             $sourcePath = Yii::app()->assetManager->publish($sourcePath);
-            $filePath = 'bugsnag.js';
+            $filePath = 'bugsnag.min.js';
 
             $bugsnagUrl = $sourcePath . '/' . $filePath;
         }
 
         $cs = Yii::app()->clientScript;
-       
+
         $cs->registerScriptFile(
             $bugsnagUrl,
             CClientScript::POS_HEAD,
