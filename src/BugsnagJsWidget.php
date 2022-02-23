@@ -70,14 +70,21 @@ class BugsnagJsWidget extends \CWidget
 
         $cs = Yii::app()->clientScript;
 
+        $options = [
+            'data-apikey' => Yii::app()->bugsnag->bugsnag_api_key,
+            'data-releasestage' => Yii::app()->bugsnag->releaseStage,
+            'data-appversion' => Yii::app()->bugsnag->appVersion,
+        ];
+
+        if (isset(Yii::app()->bugsnag->notifyEndpoint))
+        {
+            $options['data-endpoint'] = Yii::app()->bugsnag->notifyEndpoint;
+        }
+
         $cs->registerScriptFile(
             $bugsnagUrl,
             CClientScript::POS_HEAD,
-            [
-                'data-apikey' => Yii::app()->bugsnag->bugsnag_api_key,
-                'data-releasestage' => Yii::app()->bugsnag->releaseStage,
-                'data-appversion' => Yii::app()->bugsnag->appVersion,
-            ]
+            $options
         );
 
         // Include this wrapper since bugsnag.js might be blocked by adblockers.  We don't want to completely die if so.

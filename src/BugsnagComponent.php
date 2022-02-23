@@ -12,6 +12,8 @@ class BugsnagComponent extends \CComponent
     public $releaseStage = null;
     public $notifyReleaseStages;
 
+    public $notifyEndpoint = null;
+
     public $filters = ['password'];
 
     protected $client;
@@ -57,6 +59,11 @@ class BugsnagComponent extends \CComponent
         }
 
         $this->client = new \Bugsnag_Client($this->bugsnag_api_key);
+
+        if (isset($this->notifyEndpoint))
+        {
+            $this->client->setEndpoint($this->notifyEndpoint);
+        }
 
         if (!empty($this->notifyReleaseStages))
         {
