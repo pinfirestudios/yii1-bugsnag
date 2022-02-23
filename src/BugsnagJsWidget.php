@@ -9,7 +9,7 @@ use CJavaScript;
 
 /**
  * If you would like to use Bugsnag's javascript on your site, add this widget to your base layout.
- * This will automatically register Bugsnag's javascript to the page.  Default version is 3.
+ * This will automatically register Bugsnag's javascript to the page.  Default version is 4.
  * <pre>
  *     $this->widget(\pinfirestudios\yii1bugnsag\BugsnagJsWidget::class);
  * </pre>
@@ -19,14 +19,19 @@ class BugsnagJsWidget extends \CWidget
     /**
      * @var integer Bugsnag javascript version
      */
-    public $version = 3;
+    public $version = 7;
 
     /**
      * @type boolean Use the Cloudfront CDN (which will have CORS issues @see https://github.com/bugsnag/bugsnag-js/issues/155
      */
-    public $useCdn = false;
+	public $useCdn = false;
 
-    public $sourceAlias = 'npm.bugsnag-js.dist';
+	/**
+	 * @var bool
+	 */
+	public $autoTrackSessions = false;
+
+    public $sourceAlias = 'npm.@bugsnag.browser.dist';
 
     /**
      * Initiates Bugsnag javascript registration
@@ -38,9 +43,9 @@ class BugsnagJsWidget extends \CWidget
             throw new CHttpException(500, 'BugsnagAsset requires Bugsnag component to be enabled');
         }
 
-        if (!in_array($this->version, [2, 3]))
+        if (!in_array($this->version, [7]))
         {
-            throw new CHttpException(500, 'Bugsnag javascript only supports version 2 or 3');
+            throw new CHttpException(500, 'Bugsnag javascript only supports version 7');
         }
 
         if (Yii::app()->bugsnag->shouldIncludeJs)
@@ -63,15 +68,15 @@ class BugsnagJsWidget extends \CWidget
             // with a relative path.
             $sourcePath = Yii::getPathOfAlias($this->sourceAlias);
             $sourcePath = Yii::app()->assetManager->publish($sourcePath);
-            $filePath = 'bugsnag.min.js';
+            $filePath = 'bugsnag.js';//min.js';
 
             $bugsnagUrl = $sourcePath . '/' . $filePath;
 
             // Copy to an alternate name to try and get around some adblockers
             $newFilename = 'bug-reporting.js';
-			$newBugsnagUrl = $sourcePath . '/' . $newFilename;
+            $newBugsnagUrl = $sourcePath . '/' . $newFilename;
 
-			$webroot = Yii::getPathOfAlias('webroot');
+            $webroot = Yii::getPathOfAlias('webroot');
             $newFile = $webroot . '/' . $newBugsnagUrl;
             if (!file_exists($newFile))
             {
@@ -84,37 +89,48 @@ class BugsnagJsWidget extends \CWidget
 
         $cs = Yii::app()->clientScript;
 
-        $options = [
-            'data-apikey' => Yii::app()->bugsnag->bugsnag_api_key,
-            'data-releasestage' => Yii::app()->bugsnag->releaseStage,
-            'data-appversion' => Yii::app()->bugsnag->appVersion,
-        ];
-
-        if (isset(Yii::app()->bugsnag->notifyEndpoint))
-        {
-            $options['data-endpoint'] = Yii::app()->bugsnag->notifyEndpoint;
-        }
-
         $cs->registerScriptFile(
             $bugsnagUrl,
             CClientScript::POS_HEAD,
-            $options
         );
 
-        // Include this wrapper since bugsnag.js might be blocked by adblockers.  We don't want to completely die if so.
-        $js = 'var Bugsnag = Bugsnag || {};';
+        $options = [
+            'apiKey' => Yii::app()->bugsnag->bugsnag_api_key,
+            'releaseStage' => Yii::app()->bugsnag->releaseStage,
+			'appVersion' => Yii::app()->bugsnag->appVersion,
+			'autoTrackSessions' => $this->autoTrackSessions,
+        ];
+
+        if (
+            isset(Yii::app()->bugsnag->notifyEndpoint) ||
+            isset(Yii::app()->bugsnag->sessionsEndpoint)
+        )
+        {
+            $options['endpoints'] = [];
+            if (isset(Yii::app()->bugsnag->notifyEndpoint))
+            {
+                $options['endpoints']['notify'] = Yii::app()->bugsnag->notifyEndpoint;
+            }
+
+            if (isset(Yii::app()->bugsnag->sessionsEndpoint))
+            {
+                $options['endpoints']['sessions'] = Yii::app()->bugsnag->sessionsEndpoint;
+            }
+        }
 
         if (!Yii::app()->user->isGuest)
         {
-            $userId = CJavaScript::encode(Yii::app()->user->id);
-            $js .= "Bugsnag.user = { id: $userId };";
+            $options['user'] = [
+                'id' => Yii::app()->user->id,
+            ];
         }
 
         if (!empty(Yii::app()->bugsnag->notifyReleaseStages))
         {
-            $releaseStages = CJavaScript::encode(Yii::app()->bugsnag->notifyReleaseStages);
-            $js .= "Bugsnag.notifyReleaseStages = $releaseStages;";
+            $options['notifyReleaseStages'] = Yii::app()->bugsnag->notifyReleaseStages;
         }
+
+        $js = 'if (typeof(Bugsnag) != "undefined") { Bugsnag.start(' . CJavaScript::encode($options) . '); }';
 
         $cs->registerScript(__CLASS__, $js, CClientScript::POS_HEAD);
     }

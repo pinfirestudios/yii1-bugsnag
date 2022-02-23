@@ -13,6 +13,7 @@ class BugsnagComponent extends \CComponent
     public $notifyReleaseStages;
 
     public $notifyEndpoint = null;
+    public $sessionsEndpoint = null;
 
     public $filters = ['password'];
 
