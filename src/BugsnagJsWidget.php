@@ -66,6 +66,20 @@ class BugsnagJsWidget extends \CWidget
             $filePath = 'bugsnag.min.js';
 
             $bugsnagUrl = $sourcePath . '/' . $filePath;
+
+            // Copy to an alternate name to try and get around some adblockers
+            $newFilename = 'bug-reporting.js';
+			$newBugsnagUrl = $sourcePath . '/' . $newFilename;
+
+			$webroot = Yii::getPathOfAlias('webroot');
+            $newFile = $webroot . '/' . $newBugsnagUrl;
+            if (!file_exists($newFile))
+            {
+                $oldFile = $webroot . '/' . $bugsnagUrl;
+                copy($oldFile, $newFile);
+            }
+
+            $bugsnagUrl = $newBugsnagUrl;
         }
 
         $cs = Yii::app()->clientScript;
