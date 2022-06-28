@@ -49,8 +49,15 @@ class BugsnagJsWidget extends \CWidget
         }
 
         if (Yii::app()->bugsnag->shouldIncludeJs)
-        {
-            $this->registerJavascript();
+		{
+			try
+			{
+				$this->registerJavascript();
+			}
+			catch (Throwable $t)
+			{
+				Yii::error(__METHOD__, "Error(s) trying to publish Bugsnag JS: " . $t->getMessage());
+			}
         }
 
         parent::init();
