@@ -7,7 +7,8 @@ class BugsnagComponent extends \CComponent
 {
     const IGNORED_LOG_CATEGORY = 'Bugsnag notified exception';
 
-    public $bugsnag_api_key;
+	public $bugsnag_api_key;
+	public $bugsnag_api_key_for_js;
 
     public $releaseStage = null;
     public $notifyReleaseStages;
@@ -57,7 +58,12 @@ class BugsnagComponent extends \CComponent
         if (empty($this->bugsnag_api_key))
         {
             throw new CHttpException(500, 'bugsnag_api_key must be set for the bugsnag component.');
-        }
+		}
+
+		if (empty($this->bugsnag_api_key_for_js))
+		{
+			$this->bugsnag_api_key_for_js = $this->bugsnag_api_key;
+		}
 
         $this->client = new \Bugsnag_Client($this->bugsnag_api_key);
 

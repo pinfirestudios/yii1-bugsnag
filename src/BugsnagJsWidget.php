@@ -102,7 +102,7 @@ class BugsnagJsWidget extends \CWidget
         );
 
         $options = [
-            'apiKey' => Yii::app()->bugsnag->bugsnag_api_key,
+            'apiKey' => Yii::app()->bugsnag->bugsnag_api_key_for_js,
             'releaseStage' => Yii::app()->bugsnag->releaseStage,
 			'appVersion' => Yii::app()->bugsnag->appVersion,
 			'autoTrackSessions' => $this->autoTrackSessions,
