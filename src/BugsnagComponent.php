@@ -15,7 +15,7 @@ class BugsnagComponent extends \CComponent
 
     public $notifyEndpoint = null;
     public $sessionsEndpoint = null;
-	public $perfEndpoint = null;
+	public $perfEndpoint = 'https://otlp.bugsnag.com';
 
     public $filters = ['password'];
 
