@@ -26,7 +26,7 @@ class BugsnagLogTarget extends \CLogRoute
         {
             foreach ($logs as $message)
             {
-                list($message, $level, $category, $timestamp) = $message; 
+                [$message, $level, $category, $timestamp] = $message; 
 
                 if ($category == BugsnagComponent::IGNORED_LOG_CATEGORY) 
                 {
@@ -65,13 +65,13 @@ class BugsnagLogTarget extends \CLogRoute
         return array_map(
             function($message)
             {
-                list($message, $level, $category, $timestamp) = $message;
+                [$message, $level, $category, $timestamp] = $message;
 
                 if (!is_string($message)) {
                     $message = print_r($message, true);
                 }
 
-                $date = date('Y-m-d H:i:s', $timestamp) . '.' . substr(fmod($timestamp, 1), 2, 4);
+                $date = date('Y-m-d H:i:s', floor($timestamp)) . '.' . substr(fmod($timestamp, 1), 2, 4);
                 return "{$level} - ({$category}) @ {$date} - {$message}";
             }, 
             self::$exportedMessages
