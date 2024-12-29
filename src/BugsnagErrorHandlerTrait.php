@@ -28,9 +28,9 @@ trait BugsnagErrorHandlerTrait
 
         try
         {
-            Yii::error("Caught exception " . get_class($exception) . ": " . (string)$exception, BugsnagComponent::IGNORED_LOG_CATEGORY);
+            Yii::error("Caught exception " . $exception::class . ": " . (string)$exception, BugsnagComponent::IGNORED_LOG_CATEGORY);
         }
-        catch (\Exception $e) {}
+        catch (\Exception) {}
     }
 
     /**

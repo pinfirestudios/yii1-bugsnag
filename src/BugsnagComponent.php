@@ -66,7 +66,7 @@ class BugsnagComponent extends \CComponent
 			$this->bugsnag_api_key_for_js = $this->bugsnag_api_key;
 		}
 
-        $this->client = new \Bugsnag_Client($this->bugsnag_api_key);
+		$this->client = new \Bugsnag\Client($this->bugsnag_api_key);
 
         if (isset($this->notifyEndpoint))
         {
@@ -81,7 +81,7 @@ class BugsnagComponent extends \CComponent
         $this->client->setFilters($this->filters);
 
         $this->client->setBatchSending(true);
-        $this->client->setBeforeNotifyFunction([$this, 'beforeBugsnagNotify']);
+        $this->client->registerCallback($this->beforeBugsnagNotify(...));
 
         if (empty($this->releaseStage))
         {
@@ -90,7 +90,7 @@ class BugsnagComponent extends \CComponent
 
         $this->client->setAppVersion($this->getAppVersion());
 
-        Yii::trace("Setting release stage to {$this->releaseStage}.", __CLASS__);
+        Yii::trace("Setting release stage to {$this->releaseStage}.", self::class);
         $this->client->setReleaseStage($this->releaseStage);
 
         if ($this->useAppAliasForProjectRoot)
@@ -100,7 +100,7 @@ class BugsnagComponent extends \CComponent
             $this->client->setStripPath($basePath);
         }
 
-        $this->client->setType(get_class(Yii::app()));
+        $this->client->setType(Yii::app()::class);
     }
 
     /**
@@ -142,30 +142,29 @@ class BugsnagComponent extends \CComponent
         return $this->client;
     }
 
-    public function beforeBugsnagNotify(\Bugsnag_Error $error)
+    public function beforeBugsnagNotify($error)
     {
         if (!$this->exportingLog)
         {
             Yii::getLogger()->flush(true);
         }
 
-        if (isset($error->stacktrace))
-        {
-            $trace = $error->stacktrace;
-
-            if (!empty($trace->frames))
+		$stackTrace = $error->getStackTrace();
+        if (isset($stackTrace))
+		{
+			$frames = &$stackTrace->getFrames();
+            if (!empty($frames))
             {
-                $rekey = false;
-                for ($i = 0; $i < count($trace->frames); $i++)
+                for ($i = 0; $i < count($frames); $i++)
                 {
-                    $frame = $trace->frames[$i];
-                    $classDelimiter = strpos($frame['method'], '::');
+                    $frame = $frames[$i];
+                    $classDelimiter = strpos((string) $frame['method'], '::');
                     if ($classDelimiter === false)
                     {
                         break;
                     }
 
-                    $class = substr($frame['method'], 0, $classDelimiter);
+                    $class = substr((string) $frame['method'], 0, $classDelimiter);
                     if (
                         $frame['method'] != 'CApplication::handleError' &&
                         !is_a($class, 'CErrorHandler', true)
@@ -174,14 +173,9 @@ class BugsnagComponent extends \CComponent
                         break;
                     }
 
-                    unset($trace->frames[$i]);
-                    $rekey = true;
+					$stackTrace->removeFrame($i);
                 }
 
-                if ($rekey)
-                {
-                    $trace->frames = array_values($trace->frames);
-                }
             }
         }
 
@@ -227,7 +221,7 @@ class BugsnagComponent extends \CComponent
         // @see CApplication::handleException
         try
         {
-            $this->currentExceptionLogCategory = 'exception.'.get_class($exception);
+            $this->currentExceptionLogCategory = 'exception.'.$exception::class;
             if ($exception instanceof CHttpException)
             {
                 $this->currentExceptionLogCategory .= '.' . $exception->statusCode;

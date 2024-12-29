@@ -139,6 +139,6 @@ class BugsnagJsWidget extends \CWidget
 
         $js = 'if (typeof(Bugsnag) != "undefined") { Bugsnag.start(' . CJavaScript::encode($options) . '); }';
 
-        $cs->registerScript(__CLASS__, $js, CClientScript::POS_HEAD);
+        $cs->registerScript(self::class, $js, CClientScript::POS_HEAD);
     }
 }

@@ -16,7 +16,7 @@
         }
     },
     "require": {
-        "bugsnag/bugsnag": "2.*",
+        "bugsnag/bugsnag": "^3.0",
         "yiisoft/yii": "^1.1"
     },
 	"suggest": {
