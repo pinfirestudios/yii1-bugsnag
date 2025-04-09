@@ -6,7 +6,6 @@ use Yii;
 use CClientScript;
 use CHttpException;
 use CJavaScript;
-use Throwable;
 
 /**
  * If you would like to use Bugsnag's javascript on your site, add this widget to your base layout.
@@ -75,37 +74,31 @@ class BugsnagJsWidget extends \CWidget
             // Yii-1 won't have a vendor or bower-asset path guaranteed, so try and figure it out
             // with a relative path.
             $sourcePath = Yii::getPathOfAlias($this->sourceAlias);
+            $sourcePath = Yii::app()->assetManager->publish($sourcePath);
             $filePath = 'bugsnag.js';//min.js';
 
             $bugsnagUrl = $sourcePath . '/' . $filePath;
 
             // Copy to an alternate name to try and get around some adblockers
             $newFilename = 'bug-reporting.js';
-            $newBugsnagUrl = '/assets/' . $newFilename;
+            $newBugsnagUrl = $sourcePath . '/' . $newFilename;
 
             $webroot = Yii::getPathOfAlias('webroot');
-            $newFile = $webroot . '/' . $newBugsnagUrl;
+            $newFile = $webroot . $newBugsnagUrl;
             if (!file_exists($newFile))
             {
-                $oldFile = $bugsnagUrl;
-                try
+                $oldFile = $webroot . $bugsnagUrl;
+                if (!file_exists($oldFile))
+                {
+                    Yii::error(__METHOD__, "Bugsnag JS file not found: " . $oldFile);
+                }
+                else
                 {
                     @copy($oldFile, $newFile);
                 }
-                catch (Throwable $t)
-                {
-                    Yii::app()->errorHandler->handleException($t);
-                }
             }
 
-			if (file_exists($newFile))
-			{
-				$bugsnagUrl = $newBugsnagUrl;
-			}
-			else
-			{
-				Yii::error("Could not copy Bugsnag JS to alternate name: " . $newFile, __METHOD__);
-			}
+            $bugsnagUrl = $newBugsnagUrl;
         }
 
         $cs = Yii::app()->clientScript;
