@@ -2,6 +2,7 @@
 namespace pinfirestudios\yii1bugsnag;
 
 use Yii;
+use CHttpException;
 
 class BugsnagComponent extends \CComponent 
 {

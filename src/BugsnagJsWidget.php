@@ -6,6 +6,7 @@ use Yii;
 use CClientScript;
 use CHttpException;
 use CJavaScript;
+use Throwable;
 
 /**
  * If you would like to use Bugsnag's javascript on your site, add this widget to your base layout.
@@ -16,22 +17,29 @@ use CJavaScript;
  */
 class BugsnagJsWidget extends \CWidget
 {
-    /**
-     * @var integer Bugsnag javascript version
-     */
+    /** @var integer Bugsnag javascript version */
     public $version = 7;
 
-    /**
-     * @type boolean Use the Cloudfront CDN (which will have CORS issues @see https://github.com/bugsnag/bugsnag-js/issues/155
-     */
+    /** @var boolean Use the Cloudfront CDN (which will have CORS issues @see https://github.com/bugsnag/bugsnag-js/issues/155 */
 	public $useCdn = false;
 
-	/**
-	 * @var bool
-	 */
-	public $autoTrackSessions = false;
+    /** @var boolean Automatically track sessions */
+	public $autoTrackSessions = true;
 
+    /** @var string Source alias for the Bugsnag javascript file */
     public $sourceAlias = 'npm.@bugsnag.browser.dist';
+
+    /** @var string Source alias for the Bugsnag performance javascript file */
+    public $performanceSourceAlias = 'npm.@bugsnag.browser-performance.dist';
+
+    /** @var string Alternate filename for the Bugsnag javascript file */
+    public $alternateFilename = 'bug-reporting.js';
+
+    /** @var string Alternate filename for the Bugsnag performance javascript file */
+    public $performanceAlternateFilename = 'performance.js';
+
+    /** @var bool Include bugsnag performance */
+    public $includePerformance = true;
 
     /**
      * Initiates Bugsnag javascript registration
@@ -60,6 +68,11 @@ class BugsnagJsWidget extends \CWidget
 			}
         }
 
+        if ($this->includePerformance)
+        {
+            $this->registerPerformance();
+        }
+
         parent::init();
     }
 
@@ -71,34 +84,7 @@ class BugsnagJsWidget extends \CWidget
         $bugsnagUrl = '//d2wy8f7a9ursnm.cloudfront.net/bugsnag-' . $this->version . '.js';
         if (!$this->useCdn)
         {
-            // Yii-1 won't have a vendor or bower-asset path guaranteed, so try and figure it out
-            // with a relative path.
-            $sourcePath = Yii::getPathOfAlias($this->sourceAlias);
-            $sourcePath = Yii::app()->assetManager->publish($sourcePath);
-            $filePath = 'bugsnag.js';//min.js';
-
-            $bugsnagUrl = $sourcePath . '/' . $filePath;
-
-            // Copy to an alternate name to try and get around some adblockers
-            $newFilename = 'bug-reporting.js';
-            $newBugsnagUrl = $sourcePath . '/' . $newFilename;
-
-            $webroot = Yii::getPathOfAlias('webroot');
-            $newFile = $webroot . $newBugsnagUrl;
-            if (!file_exists($newFile))
-            {
-                $oldFile = $webroot . $bugsnagUrl;
-                if (!file_exists($oldFile))
-                {
-                    Yii::error(__METHOD__, "Bugsnag JS file not found: " . $oldFile);
-                }
-                else
-                {
-                    @copy($oldFile, $newFile);
-                }
-            }
-
-            $bugsnagUrl = $newBugsnagUrl;
+            $bugsnagUrl = $this->publishBugsnagJs();
         }
 
         $cs = Yii::app()->clientScript;
@@ -147,5 +133,108 @@ class BugsnagJsWidget extends \CWidget
         $js = 'if (typeof(Bugsnag) != "undefined") { Bugsnag.start(' . CJavaScript::encode($options) . '); }';
 
         $cs->registerScript(__CLASS__, $js, CClientScript::POS_HEAD);
+    }
+
+    private function publishBugsnagJs()
+    {
+        // Yii-1 won't have a vendor or bower-asset path guaranteed, so try and figure it out
+        // with a relative path.
+        $oldLinkAssets = Yii::app()->assetManager->linkAssets;
+        Yii::app()->assetManager->linkAssets = false;
+        $sourceUrl = Yii::app()->assetManager->publish(
+            Yii::getPathOfAlias($this->sourceAlias)
+        );
+        Yii::app()->assetManager->linkAssets = $oldLinkAssets;
+
+        if (YII_DEBUG) {
+            $filename = 'bugsnag.js';
+        } else {
+            $filename = 'bugsnag.min.js';
+        }
+
+        $basePath = Yii::getPathOfAlias('webroot');
+
+        // Copy to an alternate name to try and get around some adblockers
+        $newFilename = $this->alternateFilename;
+        Yii::trace("Copying Bugsnag JS file to: " . $newFilename, __METHOD__);
+        $newUrl = $sourceUrl . '/' . $newFilename;
+        Yii::trace("New URL: " . $newUrl, __METHOD__);
+        $newFilePath = $basePath . $newUrl;
+        Yii::trace("New file path: " . $newFilePath, __METHOD__);
+
+        if (file_exists($newFilePath)) {
+            return $newUrl;
+        };
+
+        $oldUrl = $sourceUrl . '/' . $filename;
+        $oldFilePath = $basePath . $oldUrl;
+
+        if (!file_exists($oldFilePath)) {
+            Yii::warning("Bugsnag JS file not found: " . $oldFilePath, __METHOD__);
+            return null;
+        }
+
+        try {
+            if (!copy($oldFilePath, $newFilePath)) {
+                Yii::warning("Failed to copy Bugsnag JS file: from " . $oldFilePath . " to " . $newFilePath, __METHOD__);
+                return $oldUrl;
+            }
+        } catch (Throwable $t) {
+            Yii::warning("Failed to copy Bugsnag JS file: from " . $oldFilePath . " to " . $newFilePath . " " . $t->getMessage(), __METHOD__);
+            return $oldUrl;
+        }
+
+        return $newUrl;
+    }
+
+    private function registerPerformance()
+    {
+        $performanceUrl = 'https://d2wy8f7a9ursnm.cloudfront.net/v2.12.0/bugsnag-performance.min.js';
+        
+        if (!$this->useCdn)
+        {
+            $performanceUrl = $this->publishPerformanceJs($performanceUrl);
+        }
+        
+        $cs = Yii::app()->clientScript;
+        
+        $options = [
+            'apiKey' => Yii::app()->bugsnag->bugsnag_api_key_for_js,
+            'appVersion' => Yii::app()->bugsnag->appVersion,
+            'releaseStage' => Yii::app()->bugsnag->releaseStage,
+            'endpoint' => 'https://bugs-otlp.rechub.net/v1/traces',
+        ];
+        
+        $encodedOptions = CJavaScript::encode($options);
+        $js = <<<JS
+import BugsnagPerformance from '{$performanceUrl}'
+BugsnagPerformance.start({$encodedOptions})
+JS;
+        $cs->registerScript(__CLASS__ . 'Performance', $js, CClientScript::POS_HEAD, ['type' => 'module']);
+    }
+    
+    private function publishPerformanceJs($cdnUrl)
+    {
+        $runtimeDir = Yii::app()->runtimePath;
+        $destinationDir = $runtimeDir . '/browser-performance';
+        $destinationPath = $destinationDir . '/' . $this->performanceAlternateFilename;
+
+        if (!file_exists($destinationPath)) {
+            try {
+                $js = file_get_contents($cdnUrl);
+
+                if (!file_exists($destinationDir)) {
+                    mkdir($destinationDir, 0777, true);
+                }
+
+                file_put_contents($destinationPath, $js);
+            } catch (Throwable $t) {
+                Yii::warning("Failed to copy Bugsnag Performance JS file: from " . $cdnUrl . " to " . $destinationPath . " " . $t->getMessage(), __METHOD__);
+                return null;
+            }
+        }
+
+        $publishedUrl = Yii::app()->assetManager->publish($destinationDir);
+        return $publishedUrl . '/' . $this->performanceAlternateFilename;
     }
 }
