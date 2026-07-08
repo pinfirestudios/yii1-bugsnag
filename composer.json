@@ -16,7 +16,7 @@
         }
     },
     "require": {
-        "bugsnag/bugsnag": "2.*",
+        "bugsnag/bugsnag": "^2.10 || ^3.0 || dev-php85support",
         "yiisoft/yii": "^1.1"
     },
 	"suggest": {

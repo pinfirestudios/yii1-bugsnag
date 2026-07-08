@@ -3,6 +3,8 @@ namespace pinfirestudios\yii1bugsnag;
 
 use Yii;
 use CHttpException;
+use Bugsnag\Client as BugsnagClient;
+use Bugsnag\Report as BugsnagReport;
 
 class BugsnagComponent extends \CComponent 
 {
@@ -67,11 +69,16 @@ class BugsnagComponent extends \CComponent
 			$this->bugsnag_api_key_for_js = $this->bugsnag_api_key;
 		}
 
-        $this->client = new \Bugsnag_Client($this->bugsnag_api_key);
+        $this->client = BugsnagClient::make($this->bugsnag_api_key, $this->notifyEndpoint);
 
-        if (isset($this->notifyEndpoint))
+        if (isset($this->notifyEndpoint) && method_exists($this->client, 'setNotifyEndpoint'))
         {
-            $this->client->setEndpoint($this->notifyEndpoint);
+            $this->client->setNotifyEndpoint($this->notifyEndpoint);
+        }
+
+        if (isset($this->sessionsEndpoint) && method_exists($this->client, 'setSessionEndpoint'))
+        {
+            $this->client->setSessionEndpoint($this->sessionsEndpoint);
         }
 
         if (!empty($this->notifyReleaseStages))
@@ -82,7 +89,7 @@ class BugsnagComponent extends \CComponent
         $this->client->setFilters($this->filters);
 
         $this->client->setBatchSending(true);
-        $this->client->setBeforeNotifyFunction([$this, 'beforeBugsnagNotify']);
+        $this->client->registerCallback([$this, 'beforeBugsnagNotify']);
 
         if (empty($this->releaseStage))
         {
@@ -101,7 +108,7 @@ class BugsnagComponent extends \CComponent
             $this->client->setStripPath($basePath);
         }
 
-        $this->client->setType(get_class(Yii::app()));
+        $this->client->setAppType(get_class(Yii::app()));
     }
 
     /**
@@ -134,32 +141,32 @@ class BugsnagComponent extends \CComponent
 
     public function getClient()
     {
-        $clientUserData = $this->getUserData();
-        if (!empty($clientUserData))
-        {
-            $this->client->setUser($clientUserData);
-        }
-
         return $this->client;
     }
 
-    public function beforeBugsnagNotify(\Bugsnag_Error $error)
+    public function beforeBugsnagNotify(BugsnagReport $report)
     {
         if (!$this->exportingLog)
         {
             Yii::getLogger()->flush(true);
         }
 
-        if (isset($error->stacktrace))
+        $clientUserData = $this->getUserData();
+        if (!empty($clientUserData))
         {
-            $trace = $error->stacktrace;
+            $report->setUser($clientUserData);
+        }
 
-            if (!empty($trace->frames))
+        $trace = $report->getStacktrace();
+        if (isset($trace))
+        {
+            $frames = $trace->getFrames();
+
+            if (!empty($frames))
             {
-                $rekey = false;
-                for ($i = 0; $i < count($trace->frames); $i++)
+                for ($i = 0; $i < count($frames); $i++)
                 {
-                    $frame = $trace->frames[$i];
+                    $frame = $frames[$i];
                     $classDelimiter = strpos($frame['method'], '::');
                     if ($classDelimiter === false)
                     {
@@ -175,18 +182,13 @@ class BugsnagComponent extends \CComponent
                         break;
                     }
 
-                    unset($trace->frames[$i]);
-                    $rekey = true;
-                }
-
-                if ($rekey)
-                {
-                    $trace->frames = array_values($trace->frames);
+                    $trace->removeFrame($i);
+                    $i--;
                 }
             }
         }
 
-        $error->setMetaData([
+        $report->setMetaData([
             'logs' => BugsnagLogTarget::getMessages(),
         ]);
     }
@@ -198,17 +200,17 @@ class BugsnagComponent extends \CComponent
             return;
         }
 
-        $this->getClient()->notifyError($category, $message, ['trace' => $trace], 'error');
+        $this->getClient()->notifyError($category, $message, $this->createReportCallback('error', ['trace' => $trace]));
     }
 
     public function notifyWarning($category, $message, $trace = null)
     {
-        $this->getClient()->notifyError($category, $message, ['trace' => $trace], 'warning');
+        $this->getClient()->notifyError($category, $message, $this->createReportCallback('warning', ['trace' => $trace]));
     }
 
     public function notifyInfo($category, $message, $trace = null)
     {
-        $this->getClient()->notifyError($category, $message, ['trace' => $trace], 'info');
+        $this->getClient()->notifyError($category, $message, $this->createReportCallback('info', ['trace' => $trace]));
     }
 
     public function notifyException($exception, $severity = 'error')
@@ -234,7 +236,7 @@ class BugsnagComponent extends \CComponent
                 $this->currentExceptionLogCategory .= '.' . $exception->statusCode;
             }
 
-            $this->getClient()->notifyException($exception, $metadata, $severity);
+            $this->getClient()->notifyException($exception, $this->createReportCallback($severity, $metadata));
         }
         finally
         {
@@ -249,6 +251,22 @@ class BugsnagComponent extends \CComponent
             Yii::getLogger()->flush(true);
         }
 
-        $this->getClient()->shutdownHandler();
+        $this->getClient()->flush();
+    }
+
+    protected function createReportCallback($severity = null, $metadata = null)
+    {
+        return function(BugsnagReport $report) use ($severity, $metadata)
+        {
+            if ($severity !== null)
+            {
+                $report->setSeverity($severity);
+            }
+
+            if (!empty($metadata))
+            {
+                $report->setMetaData($metadata);
+            }
+        };
     }
 }
