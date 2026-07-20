@@ -12,6 +12,18 @@ class BugsnagLogTarget extends \CLogRoute
      */
     public $noNotifyCategories = [];
 
+    /**
+     * @var int Maximum number of recent log messages to retain for attaching as
+     *     "recent logs before the error" metadata on a Bugsnag report. These
+     *     messages act like breadcrumbs: only the most recent context matters,
+     *     so the buffer is kept bounded to this many entries. Keeping it bounded
+     *     prevents unbounded per-process memory growth during long, query-heavy
+     *     runs (e.g. CLI migrations issuing 100k+ trace-logged SQL statements).
+     *     Set to 0 or a negative value to disable trimming (unbounded — not
+     *     recommended). Configurable via the log route config in main.php.
+     */
+    public $maxExportedMessages = 100;
+
     protected static $exportedMessages = [];
 
     /**
@@ -20,6 +32,18 @@ class BugsnagLogTarget extends \CLogRoute
     protected function processLogs($logs)
     {
         self::$exportedMessages = array_merge(self::$exportedMessages, $logs);
+
+        // Bound the retained buffer to the most recent N messages so it behaves
+        // like a breadcrumb ring buffer instead of accumulating every log line
+        // for the entire process lifetime.
+        if ($this->maxExportedMessages > 0)
+        {
+            $overflow = count(self::$exportedMessages) - $this->maxExportedMessages;
+            if ($overflow > 0)
+            {
+                self::$exportedMessages = array_slice(self::$exportedMessages, $overflow);
+            }
+        }
 
         Yii::app()->bugsnag->exportingLog = true;
         try
