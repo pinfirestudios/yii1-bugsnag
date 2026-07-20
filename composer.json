@@ -21,5 +21,8 @@
     },
 	"suggest": {
 		"bower-asset/bugsnag": "Needed to enable Bugsnag JS logging.  See README.md for installation instructions."
-	}
+	},
+    "require-dev": {
+        "rector/rector": "^2.5"
+    }
 }
