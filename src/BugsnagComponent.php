@@ -146,6 +146,12 @@ class BugsnagComponent extends \CComponent
 
     public function beforeBugsnagNotify(BugsnagReport $report)
     {
+        $exception = $report->getOriginalError();
+        if ($exception instanceof BugsnagCustomGroupingInterface)
+        {
+            $report->setGroupingHash($exception->getGroupingHash());
+        }
+
         if (!$this->exportingLog)
         {
             Yii::getLogger()->flush(true);
