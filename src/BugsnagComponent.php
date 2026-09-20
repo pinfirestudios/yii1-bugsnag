@@ -152,6 +152,11 @@ class BugsnagComponent extends \CComponent
             $report->setGroupingHash($exception->getGroupingHash());
         }
 
+        if ($exception instanceof BugsnagCustomContextInterface)
+        {
+            $report->setContext($exception->getContext());
+        }
+
         if (!$this->exportingLog)
         {
             Yii::getLogger()->flush(true);
@@ -166,7 +171,7 @@ class BugsnagComponent extends \CComponent
         $trace = $report->getStacktrace();
         if (isset($trace))
         {
-            $frames = $trace->getFrames();
+            $frames = &$trace->getFrames();
 
             if (!empty($frames))
             {
@@ -225,11 +230,6 @@ class BugsnagComponent extends \CComponent
         if ($exception instanceof BugsnagCustomMetadataInterface)
         {
             $metadata = $exception->getMetadata();
-        }
-
-        if ($exception instanceof BugsnagCustomContextInterface)
-        {
-            $this->getClient()->setContext($exception->getContext());
         }
 
         // Avoid sending exceptions as log messages and real exceptions
