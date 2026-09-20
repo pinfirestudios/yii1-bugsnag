@@ -145,6 +145,12 @@ class BugsnagComponent extends \CComponent
 
     public function beforeBugsnagNotify(\Bugsnag_Error $error)
     {
+        if (isset($error->metaData['_bugsnagGroupingHash']))
+        {
+            $error->setGroupingHash($error->metaData['_bugsnagGroupingHash']);
+            unset($error->metaData['_bugsnagGroupingHash']);
+        }
+
         if (!$this->exportingLog)
         {
             Yii::getLogger()->flush(true);
@@ -217,6 +223,12 @@ class BugsnagComponent extends \CComponent
         if ($exception instanceof BugsnagCustomMetadataInterface)
         {
             $metadata = $exception->getMetadata();
+        }
+
+        $groupingHash = $exception instanceof BugsnagCustomGroupingInterface ? $exception->getGroupingHash() : null;
+        if ($groupingHash !== null)
+        {
+            $metadata['_bugsnagGroupingHash'] = $groupingHash;
         }
 
         if ($exception instanceof BugsnagCustomContextInterface)
